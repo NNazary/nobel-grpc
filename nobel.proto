@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package nobel;
+
+// ==============================
+// Service Definition
+// ==============================
+service NobelService {
+  // Query 1: Total laureates by category and year range
+  rpc GetLaureateCountByCategory (CategoryYearRequest) returns (LaureateCountResponse);
+
+  // Query 2: Total laureates with keyword in motivation
+  rpc GetLaureateCountByKeyword (KeywordRequest) returns (LaureateCountResponse);
+
+  // Query 3: Find laureate by name
+  rpc GetLaureateInfoByName (NameRequest) returns (LaureateInfoResponse);
+}
+
+// ==============================
+// Message Definitions
+// ==============================
+
+// ---- Query 1 ----
+message CategoryYearRequest {
+  string category = 1;
+  int32 start_year = 2;
+  int32 end_year = 3;
+}
+
+message LaureateCountResponse {
+  int32 total_laureates = 1;
+}
+
+// ---- Query 2 ----
+message KeywordRequest {
+  string keyword = 1;
+}
+
+// ---- Query 3 ----
+message NameRequest {
+  string firstname = 1;
+  string lastname = 2;
+}
+
+message LaureateInfoResponse {
+  string year = 1;
+  string category = 2;
+  repeated string motivations = 3;
+}
