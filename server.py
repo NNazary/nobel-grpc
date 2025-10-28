@@ -31,7 +31,9 @@ def health():
 
 def start_http_health():
     """Start a lightweight HTTP server so Render detects the app."""
-    app.run(host="0.0.0.0", port=8080)
+    import os
+    port = int(os.environ.get("PORT", 8080))  # 👈 dynamic port
+    app.run(host="0.0.0.0", port=port)
 
 
 # ---------- gRPC Service Implementation ----------
