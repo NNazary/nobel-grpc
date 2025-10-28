@@ -1,8 +1,10 @@
 import grpc
 from concurrent import futures
 import time
+import threading
 import redis
 import json
+from flask import Flask
 
 import nobel_pb2
 import nobel_pb2_grpc
@@ -19,12 +21,23 @@ r = redis.Redis(
     decode_responses=True
 )
 
-# ---------- Service Implementation ----------
+# ---------- Flask health check (for Render) ----------
+app = Flask(__name__)
+
+@app.route("/")
+def health():
+    return "OK", 200
+
+
+def start_http_health():
+    """Start a lightweight HTTP server so Render detects the app."""
+    app.run(host="0.0.0.0", port=8080)
+
+
+# ---------- gRPC Service Implementation ----------
 class NobelServiceServicer(nobel_pb2_grpc.NobelServiceServicer):
 
     def GetLaureateCountByCategory(self, request, context):
-
-        # Year as TEXT, so we check each year individually
         years = [str(y) for y in range(request.start_year, request.end_year + 1)]
         query = " | ".join(f"@year:{{{y}}}" for y in years)
         q = f"@category:{{{request.category}}} ({query})"
@@ -54,7 +67,8 @@ class NobelServiceServicer(nobel_pb2_grpc.NobelServiceServicer):
             year=data["year"], category=data["category"], motivations=motivations
         )
 
-# ---------- Start Server ----------
+
+# ---------- Start Servers ----------
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     nobel_pb2_grpc.add_NobelServiceServicer_to_server(NobelServiceServicer(), server)
@@ -67,5 +81,8 @@ def serve():
     except KeyboardInterrupt:
         server.stop(0)
 
+
 if __name__ == "__main__":
+    # Run the HTTP health check in a background thread
+    threading.Thread(target=start_http_health, daemon=True).start()
     serve()
